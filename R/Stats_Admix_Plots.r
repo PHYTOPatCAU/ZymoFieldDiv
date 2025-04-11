@@ -100,63 +100,109 @@ for (region in names(dirs)) {
   print(heatmapacc)
   dev.off()
 }
-#Genotyping rate per field file
-# Define the regions and types
+# Define the regions (countries) and types (strict and relaxed)
 regions <- c("UK", "US", "CH")
 types <- c("relaxed", "strict")
 
-# Iterate through each region and type
+# Function to process .imiss files and create a genotyping rate plot
+process_imiss_file <- function(imiss_file, region, type) {
+  # Load the .imiss file
+  data <- read.delim(imiss_file, sep = "", header = TRUE)
+  
+  # Calculate the genotyping rate
+  data <- data %>%
+    mutate(GenotypingRate = N_GENO / (N_GENO + N_MISS) * 100)
+  
+  # Create the genotyping rate plot
+  plot <- ggplot(data, aes(x = reorder(1:nrow(data), -GenotypingRate), y = GenotypingRate)) +
+    geom_bar(stat = "identity") +
+    labs(title = paste("Genotyping Rate -", region, type),
+         x = "Samples",
+         y = "Genotyping Rate (%)") +
+    theme_bw() +
+    geom_hline(yintercept = mean(data$GenotypingRate), color = "skyblue", linetype = "dashed")
+  
+  # Save the plot
+  svg(file = paste0(region, "_GT_", type, ".svg"))
+  print(plot)
+  dev.off()
+}
+
+# Function to process .frq files and create MAF plots
+process_frq_file <- function(frq_file, region, type) {
+  # Load the .frq file
+  maf_data <- fread(frq_file)
+  
+  # Create the raw MAF plot
+  raw_maf_plot <- ggplot(maf_data, aes(x = MAF)) +
+    geom_histogram(bins = 20, fill = "gray", color = "black") +
+    labs(title = paste("MAF Distribution -", region, type),
+         x = "MAF",
+         y = "SNP Count") +
+    theme_bw()
+  
+  # Save the raw MAF plot
+  svg(file = paste0(region, "_MAF_", type, "_raw.svg"))
+  print(raw_maf_plot)
+  dev.off()
+  
+  # Normalize the MAF data by sample size
+  maf_data <- maf_data %>%
+    mutate(NormCount = NCHROBS / sum(NCHROBS))
+  
+  # Create the normalized MAF plot
+  norm_maf_plot <- ggplot(maf_data, aes(x = MAF, y = NormCount)) +
+    geom_histogram(stat = "identity", bins = 20, fill = "darkgray", color = "black") +
+    labs(title = paste("Normalized MAF Distribution -", region, type),
+         x = "MAF",
+         y = "Normalized SNP Count") +
+    theme_bw()
+  
+  # Save the normalized MAF plot
+  svg(file = paste0(region, "_MAF_", type, "_norm.svg"))
+  print(norm_maf_plot)
+  dev.off()
+}
+
+# Function to process .lmiss files and create a missingness per site plot
+process_lmiss_file <- function(lmiss_file, region, type) {
+  # Load the .lmiss file
+  lmiss_data <- read.delim(lmiss_file, sep = "", header = TRUE)
+  
+  # Calculate the missingness rate for each site
+  lmiss_data <- lmiss_data %>%
+    mutate(MissingnessRate = F_MISS * 100)
+  
+  # Create a histogram for missingness rate
+  plot <- ggplot(lmiss_data, aes(x = MissingnessRate)) +
+    geom_histogram(bins = 30, fill = ifelse(type == "relaxed", "lightgrey", "darkgrey"), color = "black") +
+    labs(title = paste("Missingness Rate Distribution -", region, type),
+         x = "Missingness Rate (%)",
+         y = "Site Count") +
+    theme_bw()
+  
+  # Save the plot
+  svg(file = paste0(region, "_miss_per_site_", type, ".svg"))
+  print(plot)
+  dev.off()
+}
+
+# Loop through each region and type
 for (region in regions) {
   for (type in types) {
     # Define the file names
     imiss_file <- paste0("Zt_", region, ".", type, ".imiss")
     frq_file <- paste0("Zt_", region, ".", type, ".frq")
+    lmiss_file <- paste0("Zt_", region, ".", type, ".lmiss")
     
-    # Load the PLINK .imiss file into a data frame
-    data <- read.delim(imiss_file, sep="", header=TRUE)
+    # Process the .imiss file
+    process_imiss_file(imiss_file, region, type)
     
-    # Calculate the genotyping rate for each sample & add the column
-    data <- data %>%
-      mutate(GenotypingRate = N_GENO / (N_GENO + N_MISS) * 100)
+    # Process the .frq file
+    process_frq_file(frq_file, region, type)
     
-    # Create the bar plot for genotyping rate
-    svg(file=paste0(region, "_GT_", type, ".svg"))
-    ggplot(data, aes(x=reorder(1:nrow(data), -GenotypingRate), y=GenotypingRate)) +
-      geom_bar(stat="identity") +
-      labs(x="", y="Genotyping Rate (%)") +
-      theme_bw() +
-      geom_hline(yintercept = mean(data$GenotypingRate), color = "skyblue", linetype = "dashed")
-    dev.off()
-    
-    ## MAF calc and plot
-    # Load maf data
-    maf_data <- fread(frq_file)
-    
-    # Plot raw MAF
-    mafplot <- ggplot(maf_data, aes(x = MAF)) +
-      geom_histogram(bins = 20) +
-      labs(x = "MAF", y = "SNP count") +
-      ylim(0, 1e6) +
-      theme_bw()
-    svg(file=paste0(region, "_MAF_", type, "_20.svg"))
-    print(mafplot)
-    dev.off()
-    
-    # Make the histogram normalized by sample size
-    maf_data <- maf_data %>%
-      mutate(NormCount = NCHROBS / sum(NCHROBS))
-    mafplot <- ggplot(maf_data, aes(x = MAF)) +
-      geom_histogram(bins = 20) +
-      labs(title = "Minor Allele Frequency (MAF) Distribution",
-           x = "MAF", y = "SNP count") +
-      ylim(0, 1e6) +
-      theme_bw() +
-      scale_y_continuous(labels = function(x) paste0(x / 1e6, "M SNPs"), limits = c(0, 1e6))
-    
-    # Save the normalized MAF plot
-    svg(file=paste0(region, "_MAF_norm_", type, "_20.svg"))
-    print(mafplot)
-    dev.off()
+    # Process the .lmiss file
+    process_lmiss_file(lmiss_file, region, type)
   }
 }
 #SNP per chr counts
