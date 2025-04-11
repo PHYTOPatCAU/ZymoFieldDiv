@@ -47,7 +47,80 @@ dev.off()
 # Prepare the data for modeling
 df_filtered <- df
 df_filtered$field <- factor(paste(df_filtered$country, df_filtered$field, sep = "_"), levels = unique(paste(df_filtered$country, df_filtered$field, sep = "_")))
+# Define the models
+logarithmic_model <- function(x, a, b) {
+  a + b * log(x)
+}
 
+asymptotic_model <- function(x, a, b, c) {
+  a - b * exp(-c * x)
+}
+
+power_model <- function(x, a, b) {
+  a * x^b
+}
+
+exponential_model <- function(x, a, b) {
+  a * exp(b * x)
+}
+
+# Function to fit all models for a given dataset
+fit_models <- function(data) {
+  results <- list()
+  
+  # Logarithmic model
+  log_fit <- nlsLM(snp_count ~ logarithmic_model(subset, a, b),
+                   start = list(a = 1, b = 1),
+                   data = data)
+  results$logarithmic <- log_fit
+  
+  # Asymptotic model
+  asym_fit <- nlsLM(snp_count ~ asymptotic_model(subset, a, b, c),
+                    start = list(a = max(data$snp_count), b = 1, c = 0.01),
+                    data = data)
+  results$asymptotic <- asym_fit
+  
+  # Power model
+  power_fit <- nlsLM(snp_count ~ power_model(subset, a, b),
+                     start = list(a = 1, b = 0.5),
+                     data = data)
+  results$power <- power_fit
+  
+  # Exponential model
+  exp_fit <- nlsLM(snp_count ~ exponential_model(subset, a, b),
+                   start = list(a = 1, b = 0.01),
+                   data = data)
+  results$exponential <- exp_fit
+  
+  return(results)
+}
+
+# Fit models for each country
+model_results <- df_filtered %>%
+  group_by(country) %>%
+  group_map(~ fit_models(.x), .keep = TRUE)
+
+# Convert results to a named list
+model_results <- setNames(model_results, unique(df_filtered$country))
+
+# Extract and summarize model fits
+summary_results <- lapply(model_results, function(models) {
+  sapply(models, function(model) {
+    AIC(model) # Use AIC to compare model fits
+  })
+})
+
+# Combine summaries into a data frame
+summary_df <- do.call(rbind, lapply(names(summary_results), function(country) {
+  data.frame(
+    country = country,
+    model = names(summary_results[[country]]),
+    AIC = unlist(summary_results[[country]])
+  )
+}))
+
+# Print the summary of AIC values
+print(summary_df)
 # Function to fit the power model and predict SNP counts
 fit_and_predict_power_model <- function(data) {
   model <- lm(log(Y) ~ log(x), data = data)
@@ -75,7 +148,7 @@ models <- grad_data_relaxed %>%
 models <- setNames(models, as.character(unique(grad_data_relaxed$field)))
 
 # Function to find the x value where the increase in SNP count is less than 5% of the maximum SNP count
-find_x_for_5_percent <- function(model, max_snp_count) {
+find_x_for_1_percent <- function(model, max_snp_count) {
   x_values <- seq(10, 10000, by = 10)
   predicted_snp_counts <- model$predict_snp(x_values)
   threshold <- 0.01 * max_snp_count
