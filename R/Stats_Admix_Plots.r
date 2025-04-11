@@ -5,6 +5,7 @@ library(tidyverse)
 library(reshape2)
 library(scales)
 library(data.table)
+library(multcompView)
 #set wd
 setwd("/work_beegfs/suaph296/Zymoproj/merged/")
 
@@ -205,153 +206,403 @@ for (region in regions) {
     process_lmiss_file(lmiss_file, region, type)
   }
 }
-#SNP per chr counts
-# Read the data from the file
-data <- read.table("~/Desktop/Work/Uni-Kiel/snp_counts_all_corrected_mac1.txt", header = TRUE)
-contiglength <- read.table("~/Desktop/Work/Uni-Kiel/contiglengthrefZt.txt", h=T)
-# Merge the data frames
-merged_data <- merge(data, contiglength, by = "chr")
-# Create the new column
-norm <- merged_data %>%
-  mutate(length = length / 1e3) %>%
-  rename(length_in_Kb = length)
-norm <- norm %>%
-  mutate(SNPs_per_Kb = snp_count / length_in_Kb)
-# Change the chromosome names
-norm$chr <- paste0("chr", norm$chr)
-
-# Convert the chromosome column to a factor and specify the levels
-norm$chr <- factor(norm$chr, levels = paste0("chr", 1:21))
-
-# Create the bar plot
-# Create a new variable for alpha levels
-norm$alpha <- ifelse(norm$filters %in% c("Strict", "Relaxed"), norm$filters, NA)
-
-bar_plot <- ggplot() +
-  geom_bar(data = subset(norm, filters == "Strict"), aes(x = chr, y = SNPs_per_Kb, fill = country, alpha = alpha), stat = "identity", position = "dodge") +
-  geom_bar(data = subset(norm, filters == "Relaxed"), aes(x = chr, y = SNPs_per_Kb, fill = country, alpha = alpha), stat = "identity", position = "dodge") +
-  scale_fill_brewer(palette = "Set1") +
-  scale_alpha_manual(name = "Filters", values = c("Strict" = 0.5, "Relaxed" = 0.75), guide = "legend") +
-  theme_minimal() +
-  labs(title="SNP density corrected by Chr length",x = "Chromosome", y = "SNPs per Kb")
-bar_plot
-# Print the plot
-print(bar_plot)
-svg("SNPperKb_all_filters_new.svg",  width = 12 ,  height =6.5)
-bar_plot
-dev.off()
-
 # Load data for Pi and Tajima_D at Chr level
 divstatsall <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/DivStatsAll.csv")
 
-# Rename columns to chr, Pi, Tajima_D and country
-divstatsall <- divstatsall %>%
-  rename(chr = file, Pi = Pi, Tajima_D = Tajimas_D, country = directory)
+# Preprocess the data
+divstatscorrectedall <- divstatscorrectedall %>%
+  mutate(
+    file = gsub(".SNP.qualityfilter.excl.rn1.sorted.vcf.gz", "", file),
+    chr = ifelse(chr == "mt", "mt", paste0("chr", chr)),
+    country = case_when(
+      grepl("Zt_US", file) ~ "US",
+      grepl("Zt_UK", file) ~ "UK",
+      grepl("Zt_CH2", file) ~ "CH",
+      TRUE ~ NA_character_
+    ),
+    Tajimas_D = as.numeric(Tajimas_D),
+    Pi = as.numeric(Pi),
+    Wattersons_Theta = as.numeric(Wattersons_Theta)
+  ) %>%
+  filter(
+    !is.na(Tajimas_D) & !is.na(Pi) & !is.na(Wattersons_Theta),
+    Tajimas_D != "indet" & Pi != "indet" & Wattersons_Theta != "indet"
+  )
 
-# Remove the '.vcf.gz' from the chr column
-divstatsall$chr <- gsub(".vcf.gz", "", divstatsall$chr)
+# Define core and accessory chromosomes
+core_chromosomes <- paste0("chr", 1:13)
+accessory_chromosomes <- paste0("chr", 14:21)
 
-# Add chr to the beginning of the chr column except for mt
-divstatsall$chr <- ifelse(divstatsall$chr == "mt", "mt", paste0("chr", divstatsall$chr))
+# Filter data for core and accessory chromosomes
+core_data <- divstatscorrectedall %>% filter(chr %in% core_chromosomes)
+accessory_data <- divstatscorrectedall %>% filter(chr %in% accessory_chromosomes)
 
-# Remove the 'samples' from the end of the country column
-divstatsall$country <- gsub("samples", "", divstatsall$country)
+# Function to perform Kruskal-Wallis and Wilcoxon rank-sum tests
+perform_tests <- function(data, metric) {
+  kruskal_result <- kruskal.test(as.formula(paste(metric, "~ country")), data = data)
+  pairwise_result <- pairwise.wilcox.test(data[[metric]], data$country, p.adjust.method = "bonferroni")
+  list(kruskal = kruskal_result, pairwise = pairwise_result)
+}
 
-# Define the chromosome levels
-chr_levels <- c(paste0("chr", 1:21), "mt")
+# Perform tests for core and accessory chromosomes
+core_tests <- list(
+  Tajimas_D = perform_tests(core_data, "Tajimas_D"),
+  Pi = perform_tests(core_data, "Pi"),
+  Wattersons_Theta = perform_tests(core_data, "Wattersons_Theta")
+)
 
-# Convert chr to a factor with levels in the correct order
-divstatsall$chr <- factor(divstatsall$chr, levels = chr_levels)
+accessory_tests <- list(
+  Tajimas_D = perform_tests(accessory_data, "Tajimas_D"),
+  Pi = perform_tests(accessory_data, "Pi"),
+  Wattersons_Theta = perform_tests(accessory_data, "Wattersons_Theta")
+)
 
-# Barplot for the Pi values with fill=country
-bar_plot <- ggplot(divstatsall, aes(x = chr, y = Pi, fill = country)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  theme_minimal() +
-  labs(x = "Chromosome", y = "Pi") +
-  scale_fill_brewer(palette = "Set1")
-bar_plot
+# Function to perform permutation tests
+permutation_test_all_pairs <- function(data, metric, group_col, n_permutations = 1000) {
+  groups <- unique(data[[group_col]])
+  p_values <- matrix(NA, nrow = length(groups), ncol = length(groups), dimnames = list(groups, groups))
+  
+  for (i in 1:(length(groups) - 1)) {
+    for (j in (i + 1):length(groups)) {
+      group1 <- groups[i]
+      group2 <- groups[j]
+      observed_diff <- abs(mean(data[[metric]][data[[group_col]] == group1], na.rm = TRUE) - 
+                           mean(data[[metric]][data[[group_col]] == group2], na.rm = TRUE))
+      perm_diffs <- replicate(n_permutations, {
+        permuted_data <- data
+        permuted_data[[group_col]] <- sample(permuted_data[[group_col]])
+        abs(mean(permuted_data[[metric]][permuted_data[[group_col]] == group1], na.rm = TRUE) - 
+            mean(permuted_data[[metric]][permuted_data[[group_col]] == group2], na.rm = TRUE))
+      })
+      p_value <- mean(perm_diffs >= observed_diff)
+      p_values[group1, group2] <- p_value
+      p_values[group2, group1] <- p_value
+    }
+  }
+  return(p_values)
+}
 
-# Save the corrected fig
-svg("Pi_all_corrected_mac1.svg", width = 9, height = 6.5)
-bar_plot
-dev.off()
+# Perform permutation tests for core and accessory chromosomes
+core_permutation_tests <- list(
+  Tajimas_D = permutation_test_all_pairs(core_data, "Tajimas_D", "country"),
+  Pi = permutation_test_all_pairs(core_data, "Pi", "country"),
+  Wattersons_Theta = permutation_test_all_pairs(core_data, "Wattersons_Theta", "country")
+)
 
-# Barplot for the Tajima_D values with fill=country
-bar_plot <- ggplot(divstatsall, aes(x = chr, y = Tajima_D, fill = country)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  theme_minimal() +
-  labs(x = "Chromosome", y = "Tajima_D") +
-  scale_fill_brewer(palette = "Set1")
-bar_plot
+accessory_permutation_tests <- list(
+  Tajimas_D = permutation_test_all_pairs(accessory_data, "Tajimas_D", "country"),
+  Pi = permutation_test_all_pairs(accessory_data, "Pi", "country"),
+  Wattersons_Theta = permutation_test_all_pairs(accessory_data, "Wattersons_Theta", "country")
+)
 
-# Save the corrected fig
-svg("Tajima_D_all_corrected_mac1.svg", width = 9, height = 6.5)
-bar_plot + ylim(-2.5, 1)
-dev.off()
+# Function to create boxplots with significance stars
+plot_metric <- function(data, metric, title, p_values) {
+  get_stars <- function(p_value) {
+    if (p_value < 0.001) {
+      return("***")
+    } else if (p_value < 0.01) {
+      return("**")
+    } else if (p_value < 0.05) {
+      return("*")
+    } else {
+      return("")
+    }
+  }
+  
+  plot <- ggplot(data, aes(x = country, y = !!sym(metric), fill = country)) +
+    geom_boxplot() +
+    theme_minimal() +
+    labs(title = title, x = "Country", y = metric) +
+    theme(text = element_text(size = 18),
+          axis.title = element_text(size = 18),
+          axis.text = element_text(size = 16),
+          strip.text = element_text(size = 18),
+          legend.title = element_text(size = 18),
+          legend.text = element_text(size = 16))
+  
+  comparisons <- combn(unique(data$country), 2, simplify = FALSE)
+  for (comparison in comparisons) {
+    group1 <- comparison[1]
+    group2 <- comparison[2]
+    p_value <- p_values[group1, group2]
+    if (!is.na(p_value) && p_value < 0.05) {
+      plot <- plot + geom_signif(comparisons = list(comparison),
+                                 annotations = get_stars(p_value),
+                                 y_position = max(data[[metric]], na.rm = TRUE) + 0.1,
+                                 tip_length = 0.01, size = 1.5)
+    }
+  }
+  return(plot)
+}
 
+# Create and save plots for core and accessory chromosomes
+metrics <- c("Tajimas_D", "Pi", "Wattersons_Theta")
+titles <- c("Tajima's D", "Pi", "Watterson's Theta")
+
+for (i in seq_along(metrics)) {
+  metric <- metrics[i]
+  title <- titles[i]
+  
+  core_plot <- plot_metric(core_data, metric, paste("Core Chromosomes -", title), core_permutation_tests[[metric]])
+  accessory_plot <- plot_metric(accessory_data, metric, paste("Accessory Chromosomes -", title), accessory_permutation_tests[[metric]])
+  
+  svg(paste0(metric, "_core_accessory.svg"), width = 16, height = 10)
+  grid.arrange(core_plot, accessory_plot, ncol = 1, nrow = 2)
+  dev.off()
+}
+
+# Export Kruskal-Wallis and permutation test results
+kruskal_results <- data.frame(
+  Metric = rep(metrics, each = 2),
+  Chromosome_Type = rep(c("Core", "Accessory"), times = length(metrics)),
+  P_Value = c(
+    sapply(core_tests, function(x) x$kruskal$p.value),
+    sapply(accessory_tests, function(x) x$kruskal$p.value)
+  )
+)
+write.table(kruskal_results, "kruskal_results.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
+summary_table <- data.frame(
+  Metric = rep(metrics, each = 3),
+  Comparison = rep(c("CH vs UK", "CH vs US", "UK vs US"), times = length(metrics)),
+  Core_P_Value = unlist(lapply(core_permutation_tests, function(x) c(x["CH", "UK"], x["CH", "US"], x["UK", "US"]))),
+  Accessory_P_Value = unlist(lapply(accessory_permutation_tests, function(x) c(x["CH", "UK"], x["CH", "US"], x["UK", "US"])))
+)
+write.table(summary_table, "permutation_test_summary.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 #load data dor Pi and Tajima_D per Effector
 # Load data
 divstatsmac1 <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/divstats_all_eff_regions.csv")
 
-# Rename columns
+# Preprocess the data
 divstatsmac1 <- divstatsmac1 %>%
-  rename(Effector = Effector, Pi = Pi, Wattersons_Theta = Wattersons_Theta, Tajima_D = Tajimas_D, region = country)
-
-# Remove 'vcf.gz' from Effector names
-divstatsmac1 <- divstatsmac1 %>%
-  mutate(Effector = str_remove(Effector, ".vcf.gz$"),
-         country = str_remove(country, "^Zt_"))
-
-# Remove rows where Pi contains 'indet'
-divstatsmac1 <- divstatsmac1 %>%
-  filter(!str_detect(Pi, "indet"))
-
-# Convert Pi to numeric
-divstatsmac1 <- divstatsmac1 %>%
-  mutate(Pi = as.numeric(Pi))
+  rename(Effector = Effector, Pi = Pi, Wattersons_Theta = Wattersons_Theta, Tajima_D = Tajimas_D, region = country) %>%
+  mutate(
+    Effector = str_remove(Effector, ".vcf.gz$"),
+    country = str_remove(country, "^Zt_"),
+    Pi = as.numeric(Pi),
+    Tajima_D = as.numeric(Tajima_D),
+    Wattersons_Theta = as.numeric(Wattersons_Theta)
+  ) %>%
+  filter(!is.na(Pi) & !is.na(Tajima_D) & !is.na(Wattersons_Theta))
 
 # Reorder Effector based on Pi values
 divstatsmac1 <- divstatsmac1 %>%
   arrange(Pi) %>%
   mutate(Effector = factor(Effector, levels = unique(Effector)))
 
-# Histogram for the Pi values with fill=country
+# Perform ANOVA and Tukey's HSD test for Pi, Tajima's D, and Watterson's Theta
+perform_anova_tukey <- function(data, metric) {
+  anova_result <- aov(as.formula(paste(metric, "~ country")), data = data)
+  tukey_result <- TukeyHSD(anova_result)
+  list(anova = summary(anova_result), tukey = tukey_result)
+}
+
+anova_tukey_results <- list(
+  Pi = perform_anova_tukey(divstatsmac1, "Pi"),
+  Tajima_D = perform_anova_tukey(divstatsmac1, "Tajima_D"),
+  Wattersons_Theta = perform_anova_tukey(divstatsmac1, "Wattersons_Theta")
+)
+
+# Print ANOVA and Tukey's HSD results
+for (metric in names(anova_tukey_results)) {
+  cat("\n### ANOVA Results for", metric, "###\n")
+  print(anova_tukey_results[[metric]]$anova)
+  
+  cat("\n### Tukey's HSD Results for", metric, "###\n")
+  print(anova_tukey_results[[metric]]$tukey)
+}
+
+# Save Tukey's HSD results to text files
+for (metric in names(anova_tukey_results)) {
+  write.table(
+    as.data.frame(anova_tukey_results[[metric]]$tukey),
+    file = paste0(metric, "_tukey_results.txt"),
+    sep = "\t",
+    row.names = TRUE,
+    quote = FALSE
+  )
+}
+
+# Calculate the 5% extreme values for Tajima's D
+tajima_d_limits <- quantile(divstatsmac1$Tajima_D, probs = c(0.025, 0.975), na.rm = TRUE)
+lower_limit <- tajima_d_limits[1]
+upper_limit <- tajima_d_limits[2]
+
+cat("Lower 2.5% limit for Tajima's D:", lower_limit, "\n")
+cat("Upper 2.5% limit for Tajima's D:", upper_limit, "\n")
+
+# Plotting Pi
 pi_histogram <- ggplot(divstatsmac1, aes(x = Effector, y = Pi, fill = country)) +
   geom_bar(stat = "identity", position = "stack") +
   theme_classic() +
   ylim(0, 1) +
-  labs(x = "Effector", y = "Pi") 
-pi_histogram
+  labs(x = "Effector", y = "Pi")
 
-# Save the Pi histogram
 svg("Pi_histogram_eff2.svg", width = 9, height = 6.5)
-pi_histogram
+print(pi_histogram)
 dev.off()
-# Remove rows where Pi contains 'indet'
-divstatsmac1 <- divstatsmac1 %>%
-  filter(!str_detect(Tajima_D, "indet"))
-# Convert Tajima_D to numeric
 
-divstatsmac1 <- divstatsmac1 %>%
-  mutate(Tajima_D = as.numeric(Tajima_D))
-
-# Reorder Effector based on Tajima_D values
-divstatsmac1 <- divstatsmac1 %>%
-  arrange(Tajima_D) %>%
-  mutate(Effector = factor(Effector, levels = unique(Effector)))
-
-# Histogram for the Tajima_D values with fill=country
+# Plotting Tajima's D with significance limits
 tajima_histogram <- ggplot(divstatsmac1, aes(x = Effector, y = Tajima_D, fill = country)) +
   geom_bar(stat = "identity", position = "stack") +
   theme_classic() +
-  ylim(-9, 9) +
   scale_y_continuous(breaks = seq(-9, 9, by = 3)) +
-  labs(x = "Effector", y = "Tajima_D")
-tajima_histogram
+  geom_hline(yintercept = lower_limit, color = "blue", linetype = "dashed", size = 1) +
+  geom_hline(yintercept = upper_limit, color = "blue", linetype = "dashed", size = 1) +
+  labs(x = "Effector", y = "Tajima's D", title = "Tajima's D Distribution with Significance Limits")
 
-# Save the Tajima_D histogram
-svg("Tajima_D_histogram2.svg", width = 9, height = 6.5)
+svg("Tajima_D_histogram_eff2.svg", width = 9, height = 6.5)
 print(tajima_histogram)
+dev.off()
+
+# Boxplot for Tajima's D with significance limits
+box_plot_tajima_d <- ggplot(divstatsmac1, aes(x = country, y = Tajima_D, fill = country)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Country", y = "Tajima's D", fill = "Field") +
+  theme(text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16)) +
+  geom_hline(yintercept = lower_limit, color = "blue", linetype = "dashed", size = 1) +
+  geom_hline(yintercept = upper_limit, color = "blue", linetype = "dashed", size = 1)
+
+svg("Tajima_D_boxplot_eff2.svg", width = 10, height = 8)
+print(box_plot_tajima_d)
+dev.off()
+
+# Generate compact letter display (CLD) for Tukey's HSD results
+plot_tukey_cld <- function(data, metric, tukey_result, title) {
+  cld <- multcompLetters4(aov(as.formula(paste(metric, "~ country")), data = data), tukey_result[[metric]]$tukey)
+  cld_df <- data.frame(
+    country = names(cld$Letters),
+    Letters = cld$Letters
+  )
+  
+  plot <- ggplot(data, aes(x = country, y = !!sym(metric), fill = country)) +
+    geom_boxplot() +
+    geom_text(data = cld_df, aes(x = country, y = max(data[[metric]], na.rm = TRUE) + 0.1, label = Letters), size = 6) +
+    labs(title = title, x = "Country", y = metric) +
+    theme_minimal(base_size = 16) +
+    theme(
+      legend.position = "none",
+      text = element_text(size = 16),
+      axis.title = element_text(size = 16),
+      axis.text = element_text(size = 14)
+    )
+  
+  return(plot)
+}
+
+# Generate and save plots for each metric with CLD
+for (metric in names(anova_tukey_results)) {
+  plot <- plot_tukey_cld(divstatsmac1, metric, anova_tukey_results, paste("Tukey's HSD for", metric))
+  
+  svg(paste0(metric, "_tukey_cld_plot.svg"), width = 10, height = 8)
+  print(plot)
+  dev.off()
+}
+# Define a permutation function
+perm_test <- function(data, metric, n_perm = 1000) {
+  observed_diff <- mean(data[[metric]][data$Genome == "Core"], na.rm = TRUE) - 
+    mean(data[[metric]][data$Genome == "Accessory"], na.rm = TRUE)
+  
+  perm_diffs <- replicate(n_perm, {
+    permuted_genome <- sample(data$Genome)
+    mean(data[[metric]][permuted_genome == "Core"], na.rm = TRUE) - 
+      mean(data[[metric]][permuted_genome == "Accessory"], na.rm = TRUE)
+  })
+  
+  p_value <- mean(abs(perm_diffs) >= abs(observed_diff))
+  
+  list(observed_diff = observed_diff, p_value = p_value)
+}
+
+# Run permutation tests per field
+fields <- unique(divstatsmac1$Field)
+results_list <- list()
+
+for (field in fields) {
+  field_data <- divstatsmac1 %>% filter(Field == field)
+  perm_test_Pi <- perm_test(field_data, "Pi")
+  perm_test_TajimaD <- perm_test(field_data, "Tajima_D")
+  perm_test_WattersonTheta <- perm_test(field_data, "Wattersons_Theta")
+  
+  results_list[[field]] <- data.frame(
+    Field = field,
+    Metric = c("Pi", "Tajima's D", "Watterson's Theta"),
+    Observed_Difference = c(perm_test_Pi$observed_diff, perm_test_TajimaD$observed_diff, perm_test_WattersonTheta$observed_diff),
+    p_value = c(perm_test_Pi$p_value, perm_test_TajimaD$p_value, perm_test_WattersonTheta$p_value)
+  )
+}
+
+results_table <- do.call(rbind, results_list)
+print(results_table)
+
+# Define colors
+colors <- brewer.pal(3, "Set1")
+names(colors) <- c("CH", "UK", "US")
+
+# Visualize the data with improved plots using facet_wrap
+Pi_subgenomeplot <- ggplot(divstatsmac1, aes(x = Genome, y = Pi, fill = Field, alpha = Genome)) +
+  geom_boxplot() +
+  labs(title = "Pi Comparison between Core and Accessory Genes", x = "Genome", y = "Pi") +
+  theme_minimal(base_size = 16) +
+  scale_fill_manual(values = colors) +
+  scale_alpha_manual(values = c("Core" = 1, "Accessory" = 0.5)) +
+  facet_wrap(~ Field) +
+  theme(legend.position = "none", 
+        text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        strip.text = element_text(size = 16)) +
+  geom_text(data = results_table %>% filter(Metric == "Pi"), aes(x = 1.5, y = max(divstatsmac1$Pi, na.rm = TRUE), label = paste("p-value:", round(p_value, 3))), size = 6, hjust = 0.5, inherit.aes = FALSE)
+
+TD_subgenomeplot <- ggplot(divstatsmac1, aes(x = Genome, y = Tajima_D, fill = Field, alpha = Genome)) +
+  geom_boxplot() +
+  labs(title = "Tajima's D Comparison between Core and Accessory Genes", x = "Genome", y = "Tajima's D") +
+  theme_minimal(base_size = 16) +
+  scale_fill_manual(values = colors) +
+  scale_alpha_manual(values = c("Core" = 1, "Accessory" = 0.5)) +
+  facet_wrap(~ Field) +
+  theme(legend.position = "none", 
+        text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        strip.text = element_text(size = 16)) +
+  geom_text(data = results_table %>% filter(Metric == "Tajima's D"), aes(x = 1.5, y = 4, label = paste("p-value:", round(p_value, 3))), size = 6, hjust = 0.5, inherit.aes = FALSE)
+
+WT_subgenomeplot <- ggplot(divstatsmac1_filtered, aes(x = Genome, y = Wattersons_Theta, fill = Field, alpha = Genome)) +
+  geom_boxplot() +
+  labs(title = "Watterson's Theta Comparison between Core and Accessory Genes", x = "Genome", y = "Watterson's Theta") +
+  theme_minimal(base_size = 16) +
+  scale_fill_manual(values = colors) +
+  scale_alpha_manual(values = c("Core" = 1, "Accessory" = 0.5)) +
+  facet_wrap(~ Field) +
+  theme(legend.position = "none", 
+        text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        strip.text = element_text(size = 16)) +
+  geom_text(data = results_table %>% filter(Metric == "Watterson's Theta"), aes(x = 1.5, y = 0.3, label = paste("p-value:", round(p_value, 3))), size = 6, hjust = 0.5, inherit.aes = FALSE)
+
+
+## there is an unaesthetic outlier I'm removing for ease of visualisation (but this does not affect the P value)
+divstatsmac1_filtered <- divstatsmac1 %>% filter(Wattersons_Theta <= 0.5)
+
+# Save the plots
+svg("Pi_subgenomeplot_facet.svg", width = 10, height = 8)
+print(Pi_subgenomeplot)
+dev.off()
+
+svg("TD_subgenomeplot_facet.svg", width = 10, height = 8)
+print(TD_subgenomeplot)
+dev.off()
+
+svg("WT_subgenomeplot_facet.svg", width = 10, height = 8)
+print(WT_subgenomeplot)
 dev.off()
 
 #Admixture plots
