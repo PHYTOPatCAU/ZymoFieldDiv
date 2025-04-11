@@ -1,88 +1,107 @@
-#Using the output from 16.extractEffLoci.sh, this script calculates nucleotide diversity (Pi), Watterson's Theta, and Tajima's D for each effector locus in each region. The script reads the VCF files for each region, computes the statistics, and saves the results to a CSV file for each region and a combined CSV file for all regions. The script uses the scikit-allel library to read the VCF files and compute the statistics. The script also handles cases where the genotype data is not found or the callset is None for a VCF file. The script prints the nucleotide diversity, Watterson's Theta, and Tajima's D for each effector locus in each region. The script saves the results to CSV files in the same directory as the VCF files for each region and a combined CSV file for all regions. The script also prints a message indicating whether the CSV files were saved successfully or not.
 import os
 import pandas as pd
 import allel
 import numpy as np
+import glob
 
-# Base directory containing the region directories
-base_directory = '/work_beegfs/suaph296/Zymoproj/merged/'
+# Directory containing the sorted VCF files
+directory = '/work_beegfs/suaph296/Zymoproj/merged'
 
-# Regions to process
-regions = ['UK', 'US', 'CH']
+# Initialize an empty DataFrame
+df = pd.DataFrame(columns=['file', 'chromosome', 'window_start', 'window_end', 'Pi', 'Wattersons_Theta', 'Tajimas_D', 'filter'])
 
-# Initialize an empty DataFrame for all regions
-all_regions_df = pd.DataFrame(columns=['file', 'Pi', 'Wattersons_Theta', 'Tajimas_D', 'directory', 'region'])
+# Use glob to find all strict and relaxed VCF files
+strict_files = glob.glob(os.path.join(directory, '*.max-m-80.biallelic-only.mac1.recode.vcf.gz'))
+relaxed_files = glob.glob(os.path.join(directory, '*.SNP.qualityfilter.excl.rn1.vcf.gz'))
 
-# Loop over each region
-for region in regions:
-    # Initialize an empty DataFrame for the current region
-    region_df = pd.DataFrame(columns=['file', 'Pi', 'Wattersons_Theta', 'Tajimas_D', 'directory'])
+# Combine strict and relaxed files into one list
+vcf_files = [(file, 'strict') for file in strict_files] + [(file, 'relaxed') for file in relaxed_files]
 
-    # Directory containing the VCF files for the current region
-    region_directory = os.path.join(base_directory, f'{region}_Effectors')
+# Loop over all the VCF files
+for file, filter_type in vcf_files:
+    # Extract the filename from the full path
+    filename = os.path.basename(file)
+    print(f"Processing file: {filename} ({filter_type})")
 
-    # Loop over all the VCF files in the region directory
-    for filename in os.listdir(region_directory):
-        if filename.endswith('relaxed.mac1.recode.vcf.gz'):
-            # Full path to the VCF file
-            file = os.path.join(region_directory, filename)
-            # Read the VCF file
-            callset = allel.read_vcf(file)
-            # Check if callset is not None and genotype data is present
-            if callset is not None and 'calldata/GT' in callset:
-                # Get the genotype data
-                gt = allel.GenotypeArray(callset['calldata/GT'])
-                # Get the chromosome ID from the filename
-                chrom_id = callset['variants/CHROM'][0]
-                # Count alleles
-                ac = gt.count_alleles()
-                # Compute Pi
-                pi = allel.sequence_diversity(range(len(ac)), ac)
-                # Compute Watterson's Theta
-                theta_w = allel.watterson_theta(range(len(ac)), ac)
-                # Sum over the rows to get the total count for each allele
-                ac_sum = ac.sum(axis=0)
-                # Compute site frequency spectrum
-                sfs = allel.sfs(ac_sum)
-                # Compute Tajima's D
-                tajimas_d = allel.tajima_d(ac)
-                # Handle cases where Tajima's D is nan
-                if np.isnan(tajimas_d):
-                    tajimas_d = 'indet'
-                print(f'Nucleotide diversity for {chrom_id} in {region}: {pi}')
-                print(f'Watterson\'s Theta for {chrom_id} in {region}: {theta_w}')
-                print(f"Tajima's D for {chrom_id} in {region}: {tajimas_d}")
-                # Add the results to the DataFrame if Tajima's D is not 'indet'
-                if tajimas_d != 'indet':
-                    new_row = pd.DataFrame({'file': [filename], 'Pi': [pi], 'Wattersons_Theta': [theta_w], 'Tajimas_D': [tajimas_d], 'directory': [region_directory]})
-                    region_df = pd.concat([region_df, new_row], ignore_index=True)
-            else:
-                print(f'Genotype data not found or callset is None for file: {filename}')
-                # Add a row with 'indet' values
-                new_row = pd.DataFrame({'file': [filename], 'Pi': ['indet'], 'Wattersons_Theta': ['indet'], 'Tajimas_D': ['indet'], 'directory': [region_directory]})
-                region_df = pd.concat([region_df, new_row], ignore_index=True)
+    # Read the VCF file
+    try:
+        callset = allel.read_vcf(file, fields=['calldata/GT', 'variants/CHROM', 'variants/POS'])
+    except Exception as e:
+        print(f"Error reading file {filename}: {e}")
+        continue
 
-    # Save the region-specific DataFrame to a CSV file
-    region_csv = os.path.join(base_directory, f'DivStats{region}.csv')
-    region_df.to_csv(region_csv, index=False)
+    # Get the genotype data
+    if 'calldata/GT' not in callset:
+        print(f"No genotype data found in file {filename}. Skipping.")
+        continue
 
-    # Add a column for the region and concatenate with the all regions DataFrame
-    region_df['region'] = region
-    all_regions_df = pd.concat([all_regions_df, region_df], ignore_index=True)
+    gt = allel.GenotypeArray(callset['calldata/GT'])
+    chroms = callset['variants/CHROM']
+    pos = callset['variants/POS']
 
-# Save the combined DataFrame for all regions to a CSV file
-all_regions_csv = os.path.join(base_directory, 'DivStatsAll.csv')
-all_regions_df.to_csv(all_regions_csv, index=False)
+    # Process each chromosome separately
+    unique_chroms = np.unique(chroms)
+    for chrom in unique_chroms:
+        # Filter data for the current chromosome
+        chrom_mask = (chroms == chrom)
+        chrom_pos = pos[chrom_mask]
+        chrom_gt = gt.compress(chrom_mask, axis=0)
 
-# Debugging: Confirm the files were saved
-for region in regions:
-    region_csv = os.path.join(base_directory, f'DivStats{region}.csv')
-    if os.path.exists(region_csv):
-        print(f"CSV file saved successfully for {region} at {region_csv}")
-    else:
-        print(f"Failed to save CSV file for {region} at {region_csv}")
+        # Skip if no data for this chromosome
+        if chrom_gt.shape[0] == 0:
+            print(f"No data for chromosome {chrom} in file {filename}. Skipping.")
+            continue
 
-if os.path.exists(all_regions_csv):
-    print(f"Combined CSV file saved successfully at {all_regions_csv}")
-else:
-    print(f"Failed to save combined CSV file at {all_regions_csv}")
+        # Count alleles
+        chrom_ac = chrom_gt.count_alleles()
+
+        # Ensure positions and allele counts are sorted
+        sorted_indices = np.argsort(chrom_pos)
+        chrom_pos = chrom_pos[sorted_indices]
+        chrom_ac = chrom_ac[sorted_indices]
+
+        # Skip if allele count array is empty or invalid
+        if chrom_ac.shape[0] == 0 or chrom_ac.ndim != 2:
+            print(f"Invalid allele count data for chromosome {chrom} in file {filename}. Skipping.")
+            continue
+
+        # Define window size and step
+        window_size = 100000  # 100 kb
+        step_size = 100000    # 100 kb
+
+        # Process data in windows
+        for window_start in range(0, chrom_pos[-1], step_size):
+            window_end = window_start + window_size
+            window_mask = (chrom_pos >= window_start) & (chrom_pos < window_end)
+            window_ac = chrom_ac[window_mask]
+
+            # Skip if no data in the window
+            if window_ac.shape[0] == 0:
+                continue
+
+            # Compute Pi, Watterson's Theta, and Tajima's D
+            try:
+                pi = allel.sequence_diversity(chrom_pos[window_mask], window_ac)
+                wattersons_theta = allel.watterson_theta(chrom_pos[window_mask], window_ac)
+                tajimas_d = allel.tajima_d(window_ac)
+            except Exception as e:
+                print(f"Error processing file {filename}, chromosome {chrom}, window {window_start}-{window_end}: {e}")
+                continue
+
+            # Add the results to the DataFrame
+            new_row = pd.DataFrame({
+                'file': [filename],
+                'chromosome': [chrom],
+                'window_start': [window_start],
+                'window_end': [window_end],
+                'Pi': [pi],
+                'Wattersons_Theta': [wattersons_theta],
+                'Tajimas_D': [tajimas_d],
+                'filter': [filter_type]
+            })
+            df = pd.concat([df, new_row], ignore_index=True)
+
+# Export to a CSV file
+output_csv = f'{directory}/divstatsBigFilt_windows.csv'
+df.to_csv(output_csv, index=False)
+print(f"CSV file saved successfully at {output_csv}")
