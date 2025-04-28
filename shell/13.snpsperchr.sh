@@ -21,7 +21,7 @@ folders=("/work_beegfs/suaph296/Zymoproj/UKsamples/VCF" "/work_beegfs/suaph296/Z
 # Loop through each folder
 for folder in "${folders[@]}"; do
   # Loop through each strict vcf file in the folder
-  for file in "$folder"/*max-m-80.biallelic-only.mac1.maf05.recode.vcf.gz; do
+  for file in "$folder"/*.mac1.recode.vcf.gz; do
     # Extract filename without path and extension
     filename_no_ext="${file##*/}"
     filename_base="${filename_no_ext%%.*}"
