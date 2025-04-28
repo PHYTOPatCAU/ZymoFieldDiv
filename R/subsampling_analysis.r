@@ -238,7 +238,7 @@ predictions_relaxed <- grad_data_relaxed %>%
 # Combine predictions from both datasets
 predictions <- bind_rows(predictions_strict, predictions_relaxed)
 predictions
-#because the curves don't really flatten near the amount of samples we could realistically obtain in a survey, we assume that any less than an increase of 5% in the observed snp count is not meaningful for a survey, so we follow up the analysis with this:
+#because the curves don't really flatten near the amount of samples we could realistically obtain in a survey, we assume that any less than an increase of 1% in the observed snp count is not meaningful for a survey, so we follow up the analysis with this:
 # Function to fit the power model and predict SNP counts
 fit_and_predict_power_model <- function(data) {
   model <- lm(log(Y) ~ log(x), data = data)
@@ -263,12 +263,12 @@ max_relaxed_per_country <- relaxed_data %>%
 print(max_strict_per_country)
 print(max_relaxed_per_country)
 # Function to find the sample size at which the increase is less than 1% of the max SNP count
-find_sample_size_for_5_percent_increase <- function(data, max_snp_count) {
+find_sample_size_for_1_percent_increase <- function(data, max_snp_count) {
   fit <- fit_and_predict_power_model(data)
   x_values <- seq(min(data$x), max(data$x) * 10, length.out = 1000)
   y_values <- fit$predict_snp(x_values)
   
-  # Calculate the threshold for 5% increase
+  # Calculate the threshold for 1% increase
   threshold <- max_snp_count * 1.05
   
   # Debugging: Check the lengths of y_values and threshold
@@ -295,25 +295,25 @@ max_snp_counts_relaxed <- grad_data_relaxed %>%
   group_by(country) %>%
   summarize(max_snp_count = max(Y))
 
-# Initialize an empty data frame to store the results
+# Initialise an empty data frame to store the results
 sample_sizes_strict <- data.frame()
 
 # Find the sample size for each country in the strict dataset
 for (country in unique(grad_data_strict$country)) {
   country_data <- grad_data_strict %>% filter(country == !!country)
   max_snp_count <- max_snp_counts_strict %>% filter(country == !!country) %>% pull(max_snp_count)
-  sample_size <- find_sample_size_for_5_percent_increase(country_data, max_snp_count)
+  sample_size <- find_sample_size_for_1_percent_increase(country_data, max_snp_count)
   
   sample_sizes_strict <- rbind(sample_sizes_strict, data.frame(country = country, sample_size = sample_size, type = "Strict"))
 }
 print(sample_sizes_strict)
-# Initialize an empty data frame to store the results
+# Initialise an empty data frame to store the results
 sample_sizes_relaxed <- data.frame()
 # Find the sample size for each country in the relaxed dataset
 for (country in unique(grad_data_relaxed$country)) {
   country_data <- grad_data_relaxed %>% filter(country == !!country)
   max_snp_count <- max_snp_counts_relaxed %>% filter(country == !!country) %>% pull(max_snp_count)
-  sample_size <- find_sample_size_for_5_percent_increase(country_data, max_snp_count)
+  sample_size <- find_sample_size_for_1_percent_increase(country_data, max_snp_count)
   
   sample_sizes_relaxed <- rbind(sample_sizes_relaxed, data.frame(country = country, sample_size = sample_size, type = "Relaxed"))
 }
