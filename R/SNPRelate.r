@@ -55,8 +55,11 @@ for (dataset in names(vcf_files)) {
   print(p1)
   dev.off()
   
-  # Remove specific rows
-  tab_full_NO <- tab_full[-c(9, 10, 66, 67, 98, 99, 115, 116, 122, 123, 132), ]
+  # Remove outliers
+  pc1_95 <- quantile(tab_full$PC1, 0.95)
+  pc2_95 <- quantile(tab_full$PC2, 0.95)
+   tab_full_NO <- tab_full %>% 
+  filter(PC1 <= pc1_95 & PC2 <= pc2_95)
   
   # Create the PCA plot without specific rows
   p2 <- ggplot(tab_full_NO, aes(x = PC1, y = PC2, color = pop)) +
@@ -140,8 +143,11 @@ for (dataset in names(vcf_files)) {
   print(p1)
   dev.off()
   
-  # Remove specific rows
-  tab_full_NO <- tab_full[-c(16, 17, 18, 19, 148, 149, 150), ]
+  # Remove outliers
+  pc1_95 <- quantile(tab_full$PC1, 0.95)
+  pc2_95 <- quantile(tab_full$PC2, 0.95)
+   tab_full_NO <- tab_full %>% 
+  filter(PC1 <= pc1_95 & PC2 <= pc2_95)
   
   # Create the PCA plot without specific rows
   p2 <- ggplot(tab_full_NO, aes(x = PC1, y = PC2, color = pop)) +
@@ -210,8 +216,11 @@ for (dataset in names(vcf_files)) {
   print(p1)
   dev.off()
   
-  # Remove specific rows
-  tab_full_NO <- tab_full[-c(7, 9, 33, 38, 49, 51), ]
+  # Remove outliers
+  pc1_95 <- quantile(tab_full$PC1, 0.95)
+  pc2_95 <- quantile(tab_full$PC2, 0.95)
+   tab_full_NO <- tab_full %>% 
+  filter(PC1 <= pc1_95 & PC2 <= pc2_95)
   
   # Create the PCA plot without specific rows
   p2 <- ggplot(tab_full_NO, aes(x = PC1, y = PC2, color = pop)) +
@@ -272,8 +281,11 @@ svg(file = "PCA_WW_all.svg")
 print(p1)
 dev.off()
 
-# Remove specific rows
-tab_full_NO <- tab_full[-c(16, 17, 18, 19, 148, 149, 150), ]
+# Remove outliers
+  pc1_95 <- quantile(tab_full$PC1, 0.95)
+  pc2_95 <- quantile(tab_full$PC2, 0.95)
+  tab_full_NO <- tab_full %>% 
+  filter(PC1 <= pc1_95 & PC2 <= pc2_95)
 
 # Create the PCA plot without specific rows
 p2 <- tab_full_NO %>% 
