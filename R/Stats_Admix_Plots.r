@@ -1,4 +1,4 @@
-#This is a collection of miniscripts used to plot the data from various scripts: 04.5,13,15,17
+#This is a collection of miniscripts used to plot the data from various scripts: 04.5,13,15,17,18,20
 library(ggplot2)
 library(ggpattern)
 library(tidyverse)
