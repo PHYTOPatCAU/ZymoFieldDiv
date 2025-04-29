@@ -206,7 +206,7 @@ for (region in regions) {
     process_lmiss_file(lmiss_file, region, type)
   }
 }
-# Load data for Pi and Tajima_D at Chr level
+# Script for processing diversity statistics per field and plotting for Pi and Tajimas_D at Chr level
 divstatsall <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/DivStatsAll.csv")
 
 # Preprocess the data
@@ -369,7 +369,7 @@ summary_table <- data.frame(
   Accessory_P_Value = unlist(lapply(accessory_permutation_tests, function(x) c(x["CH", "UK"], x["CH", "US"], x["UK", "US"])))
 )
 write.table(summary_table, "permutation_test_summary.txt", sep = "\t", row.names = FALSE, quote = FALSE)
-#load data dor Pi and Tajima_D per Effector
+#load data for Pi and Tajimas_D per Effector
 # Load data
 divstatsmac1 <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/divstats_all_eff_regions.csv")
 
@@ -545,7 +545,7 @@ print(results_table)
 colors <- brewer.pal(3, "Set1")
 names(colors) <- c("CH", "UK", "US")
 
-# Visualize the data with improved plots using facet_wrap
+# Visualise the data with improved plots using facet_wrap
 Pi_subgenomeplot <- ggplot(divstatsmac1, aes(x = Genome, y = Pi, fill = Field, alpha = Genome)) +
   geom_boxplot() +
   labs(title = "Pi Comparison between Core and Accessory Genes", x = "Genome", y = "Pi") +
@@ -589,7 +589,7 @@ WT_subgenomeplot <- ggplot(divstatsmac1_filtered, aes(x = Genome, y = Wattersons
   geom_text(data = results_table %>% filter(Metric == "Watterson's Theta"), aes(x = 1.5, y = 0.3, label = paste("p-value:", round(p_value, 3))), size = 6, hjust = 0.5, inherit.aes = FALSE)
 
 
-## there is an unaesthetic outlier I'm removing for ease of visualisation (but this does not affect the P value)
+## There is an unaesthetic outlier I'm removing for ease of visualisation (but this does not affect the P value)
 divstatsmac1_filtered <- divstatsmac1 %>% filter(Wattersons_Theta <= 0.5)
 
 # Save the plots
@@ -653,7 +653,7 @@ bp <- barplot(t(as.matrix(tbl[[1]][order(labels$n),])),
               yaxt = "n", 
               space = spaces)
 
-# Add the individual names below the barplot with smaller font size
+# Add the individual names below the barplot with a smaller font size
 axis(1, at = bp, labels = labels$sample.id[order(labels$n)], las = 2, tick = FALSE, cex = 0.1)
 
 # Add the population names below the individual names
