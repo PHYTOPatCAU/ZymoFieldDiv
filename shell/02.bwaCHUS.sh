@@ -16,8 +16,8 @@ conda activate samtools
 #bwa index -p IPO323 IPO323.fa
 
 #Set input and output directories
-input_dir="/work_beegfs/suaph296/Zymoproj/CHsamples/fastq"
-output_dir="/work_beegfs/suaph296/Zymoproj/CHsamples/BAM"
+input_dir="~/Zymoproj/CHsamples/fastq"
+output_dir="~/Zymoproj/CHsamples/BAM"
 reference="IPO323"
 #Loop through all pairs of FASTQ files in the input directory
 
@@ -43,8 +43,8 @@ module load miniconda3/4.12.0
 #load conda env
 conda activate samtools
 # restate the directories
-input_dir="/work_beegfs/suaph296/Zymoproj/CHsamples/fastq"
-output_dir="/work_beegfs/suaph296/Zymoproj/CHsamples/BAM"
+input_dir="~/Zymoproj/CHsamples/fastq"
+output_dir="~/Zymoproj/CHsamples/BAM"
 reference="IPO323"
 output_sam="$output_sam"  # Pass the output_sam variable here so the SLURM knows what it is
 

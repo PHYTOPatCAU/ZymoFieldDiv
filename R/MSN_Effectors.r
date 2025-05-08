@@ -8,7 +8,7 @@ library(ggrepel)
 library(RColorBrewer)
 library(igraph)
 #set wd
-setwd("/work_beegfs/suaph296/Zymoproj/merged/")
+setwd("~/Zymoproj/merged/")
 # List of VCF file names (with extension)for all three fields functionally characterized effectors
 vcf_files <- c("sorted_ZtIPO323_060700.vcf.gz",  # AvrStb6
                "sorted_ZtIPO323_119610.vcf.gz",  # Zt10
@@ -85,7 +85,7 @@ plot_poppr_msn(
 dev.off()
 }
 #For within-field effector distribution is only in the UK field. (Per plant GPS position)
-setwd("/work_beegfs/suaph296/Zymoproj/merged/UK_Effectors/")
+setwd("~/Zymoproj/merged/UK_Effectors/")
 # List of VCF files to process for the next part
 vcf_files <- c(
   "ZtIPO323_117500.vcf.gz",  # Zt11

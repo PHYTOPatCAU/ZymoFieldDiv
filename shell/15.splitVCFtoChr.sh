@@ -15,10 +15,10 @@ module load miniconda3/4.12.0
 conda activate samtools
 
 # Set the folders containing the VCF files
-folders=("/work_beegfs/suaph296/Zymoproj/UKsamples/VCF" "/work_beegfs/suaph296/Zymoproj/USsamples/VCF" "/work_beegfs/suaph296/Zymoproj/CHsamples/VCF")
+folders=("~/Zymoproj/UKsamples/VCF" "~/Zymoproj/USsamples/VCF" "~/Zymoproj/CHsamples/VCF")
 
 # Output directory
-output_dir="/work_beegfs/suaph296/Zymoproj/merged"
+output_dir="~/Zymoproj/merged"
 
 # Loop through each folder
 for folder in "${folders[@]}"; do

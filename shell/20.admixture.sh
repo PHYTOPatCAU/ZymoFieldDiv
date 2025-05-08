@@ -16,7 +16,7 @@ module load miniconda3/4.12.0
 conda activate samtools
 
 # Set PATH
-vcf_path=/work_beegfs/suaph296/Zymoproj/merged
+vcf_path=~/Zymoproj/merged
 output_dir=${vcf_path}/admixture/relaxed
 
 # make output directory

@@ -24,7 +24,7 @@ done < run_accessions.txt
 # Activate conda environment if not already activated
 conda activate samtools
 # Define the input directory where the FASTQ files and response.txt are located
-input_dir="/work_beegfs/suaph296/Zymoproj/DEsamples/fastq/"
+input_dir="~/Zymoproj/DEsamples/fastq/"
 response_file="${input_dir}/response_1718702682986.txt.txt"
 
 # Skip the header line of the response.txt file and read the rest

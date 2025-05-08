@@ -2,8 +2,8 @@
 
 # Region prefixes
 regions=("CH" "UK" "US")
-vcf_path_base="/work_beegfs/suaph296/Zymoproj"
-ref="/work_beegfs/suaph296/Zymoseptoria_tritici.MG2.dna.toplevel.mt+.fa"
+vcf_path_base="~/Zymoproj"
+ref="~/Zymoseptoria_tritici.MG2.dna.toplevel.mt+.fa"
 
 for region in "${regions[@]}"; do
     # Generate a temporary script for the region

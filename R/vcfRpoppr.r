@@ -13,8 +13,8 @@ library(vegan)
 # All are output variant call files from 10.5.downtreamfilters.sh
 #Beacuse the metadata was slightly different for the fields we accomodated the category mapping for each one
 # Define the list of VCF files
-vcf_files <- c("/work_beegfs/suaph296/Zymoproj/merged/Zt_UK.relaxed.mac1.recode.vcf.gz",
-               "/work_beegfs/suaph296/Zymoproj/merged/Zt_UK.max-m-80.biallelic-only.mac1.recode.vcf.gz")
+vcf_files <- c("~/Zymoproj/merged/Zt_UK.relaxed.mac1.recode.vcf.gz",
+               "~/Zymoproj/merged/Zt_UK.max-m-80.biallelic-only.mac1.recode.vcf.gz")
 
 # Loop through each VCF file
 for (vcf_file_path in vcf_files) {
@@ -282,8 +282,8 @@ for (vcf_file_path in vcf_files) {
 ###############################################################################################
 #CH
 # Define the list of VCF files
-vcf_files <- c("/work_beegfs/suaph296/Zymoproj/merged/Zt_CH.relaxed.mac1.recode.vcf.gz",
-               "/work_beegfs/suaph296/Zymoproj/merged/Zt_CH.max-m-80.biallelic-only.mac1.recode.vcf.gz")
+vcf_files <- c("~/Zymoproj/merged/Zt_CH.relaxed.mac1.recode.vcf.gz",
+               "~/Zymoproj/merged/Zt_CH.max-m-80.biallelic-only.mac1.recode.vcf.gz")
 
 # Loop through each VCF file
 for (vcf_file_path in vcf_files) {
@@ -417,8 +417,8 @@ for (vcf_file_path in vcf_files) {
 ###############################################################################################
 #US
 # Define the list of VCF files
-vcf_files <- c("/work_beegfs/suaph296/Zymoproj/merged/Zt_US.relaxed.mac1.recode.vcf.gz",
-               "/work_beegfs/suaph296/Zymoproj/merged/Zt_US.max-m-80.biallelic-only.mac1.recode.vcf.gz")
+vcf_files <- c("~/Zymoproj/merged/Zt_US.relaxed.mac1.recode.vcf.gz",
+               "~/Zymoproj/merged/Zt_US.max-m-80.biallelic-only.mac1.recode.vcf.gz")
 
 # Loop through each VCF file
 for (vcf_file_path in vcf_files) {

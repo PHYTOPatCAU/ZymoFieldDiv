@@ -14,7 +14,7 @@ conda activate samtools
 
 # Define region prefixes
 regions=("CH" "UK" "US")
-vcf_path_base="/work_beegfs/suaph296/Zymoproj"
+vcf_path_base="~/Zymoproj"
 
 for region in "${regions[@]}"; do
     vcf_path="${vcf_path_base}/${region}samples/VCF"

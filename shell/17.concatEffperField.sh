@@ -20,7 +20,7 @@ declare -A expected_samples
 expected_samples=( ["UK"]=160 ["CH"]=158 ["US"]=97 )
 
 # Base directory containing the region directories
-base_directory="/work_beegfs/suaph296/Zymoproj/merged"
+base_directory="~/Zymoproj/merged"
 
 # Regions to process
 regions=("UK" "US" "CH")

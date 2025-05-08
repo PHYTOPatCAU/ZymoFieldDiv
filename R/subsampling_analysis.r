@@ -9,7 +9,7 @@ library(jtools)
 library(minpack.lm)
 library(ggplot2)
 library(tidyverse)
-setwd("/work_beegfs/suaph296/Zymoproj/merged")
+setwd("~/Zymoproj/merged")
 
 # Load the data
 df <- read.table("rarefaction_mac1_all.txt", header = TRUE)

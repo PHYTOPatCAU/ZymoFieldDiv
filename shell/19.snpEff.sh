@@ -43,7 +43,7 @@ for variant in "${variant_types[@]}"; do
 done
 #for effectors
 # Step 3: Run the annotation 
-java -mx200G -jar snpEff/snpEff.jar -v Zymoseptoria_tritici /work_beegfs/suaph296/Zymoproj/merged/GOI_WW_strict/Effectors_all_merged.vcf.gz > snpEff/SNP_eff_Zt_WW_strict.vcf
+java -mx200G -jar snpEff/snpEff.jar -v Zymoseptoria_tritici ~/Zymoproj/merged/GOI_WW_strict/Effectors_all_merged.vcf.gz > snpEff/SNP_eff_Zt_WW_strict.vcf
 
 #extract the regions of interest
 #cat snpEff/SNP_eff_Zt_WW_strict.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_strict.eff.txt

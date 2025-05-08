@@ -14,7 +14,7 @@ module load miniconda3/4.12.0
 conda activate samtools
 
 # Directory containing the VCF files
-merged_directory="/work_beegfs/suaph296/Zymoproj/merged"
+merged_directory="~/Zymoproj/merged"
 
 # Initialize an array to store the VCF files
 vcf_files=()

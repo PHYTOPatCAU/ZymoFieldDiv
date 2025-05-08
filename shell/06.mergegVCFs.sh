@@ -19,13 +19,13 @@ conda activate var_call
 
 # Define the root directories for gVCF
 GVCF_ROOT_DIRS=(
-    "/work_beegfs/suaph296/Zymoproj/UKsamples/gVCF"
-    "/work_beegfs/suaph296/Zymoproj/CHsamples/gVCF"
-    "/work_beegfs/suaph296/Zymoproj/USsamples/gVCF"
+    "~/Zymoproj/UKsamples/gVCF"
+    "~/Zymoproj/CHsamples/gVCF"
+    "~/Zymoproj/USsamples/gVCF"
 )
 
 # Set the reference genome file
-REF="/work_beegfs/suaph296/Zymoseptoria_tritici.MG2.dna.toplevel.mt+.fa"
+REF="~/Zymoseptoria_tritici.MG2.dna.toplevel.mt+.fa"
 
 # Iterate over each gVCF root directory
 for GVCF_ROOT_DIR in "${GVCF_ROOT_DIRS[@]}"; do

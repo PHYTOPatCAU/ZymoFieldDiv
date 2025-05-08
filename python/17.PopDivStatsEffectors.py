@@ -8,9 +8,9 @@ df = pd.DataFrame(columns=['file', 'region', 'chromosome', 'Pi', 'Tajimas_D', 'W
 
 # Directories containing the VCF files
 directories = {
-    'UK': '/work_beegfs/suaph296/Zymoproj/merged/UKsamples',
-    'US': '/work_beegfs/suaph296/Zymoproj/merged/USsamples',
-    'CH': '/work_beegfs/suaph296/Zymoproj/merged/CHsamples'
+    'UK': '~/Zymoproj/merged/UKsamples',
+    'US': '~/Zymoproj/merged/USsamples',
+    'CH': '~/Zymoproj/merged/CHsamples'
 }
 
 # Loop over all the directories
@@ -57,4 +57,4 @@ for region, directory in directories.items():
 print(df)
 
 # Export to a csv file
-df.to_csv('/work_beegfs/suaph296/Zymoproj/merged/divstats_all_eff_regions.csv', index=False)
+df.to_csv('~/Zymoproj/merged/divstats_all_eff_regions.csv', index=False)

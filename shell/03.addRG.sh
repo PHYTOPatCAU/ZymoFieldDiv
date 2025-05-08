@@ -14,15 +14,15 @@ conda activate var_call
 
 # Define the root directories for BAM and BAMRgFolders
 BAM_ROOT_DIRS=(
-    "/work_beegfs/suaph296/Zymoproj/UKsamples/BAM"
-    "/work_beegfs/suaph296/Zymoproj/CHsamples/BAM"
-    "/work_beegfs/suaph296/Zymoproj/USsamples/BAM"
+    "~/Zymoproj/UKsamples/BAM"
+    "~/Zymoproj/CHsamples/BAM"
+    "~/Zymoproj/USsamples/BAM"
 )
 
 BAM_RG_ROOT_DIRS=(
-    "/work_beegfs/suaph296/Zymoproj/UKsamples/BAMRgFolders"
-    "/work_beegfs/suaph296/Zymoproj/CHsamples/BAMRgFolders"
-    "/work_beegfs/suaph296/Zymoproj/USsamples/BAMRgFolders"
+    "~/Zymoproj/UKsamples/BAMRgFolders"
+    "~/Zymoproj/CHsamples/BAMRgFolders"
+    "~/Zymoproj/USsamples/BAMRgFolders"
 )
 
 # Iterate over each BAM root directory

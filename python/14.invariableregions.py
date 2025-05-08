@@ -12,7 +12,7 @@ import os
 ref_genome = list(SeqIO.parse("Zymoseptoria_tritici.MG2.dna.toplevel.mt+.fa", "fasta"))
 
 # Set the folders containing the BED files
-folders = ["/work_beegfs/suaph296/Zymoproj/UKsamples/VCF", "/work_beegfs/suaph296/Zymoproj/USsamples/VCF", "/work_beegfs/suaph296/Zymoproj/CHsamples/VCF"]
+folders = ["~/Zymoproj/UKsamples/VCF", "~/Zymoproj/USsamples/VCF", "~/Zymoproj/CHsamples/VCF"]
 
 # Create a dictionary to store lengths of each chromosome
 chrom_lengths = {record.id: len(record) for record in ref_genome}

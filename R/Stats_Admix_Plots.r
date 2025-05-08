@@ -7,18 +7,18 @@ library(scales)
 library(data.table)
 library(multcompView)
 #set wd
-setwd("/work_beegfs/suaph296/Zymoproj/merged/")
+setwd("~/Zymoproj/merged/")
 
 #Quality check for depth per chromosome
 # Define the directories
 dirs <- list(
-  UK = "/work_beegfs/suaph296/Zymoproj/UKsamples",
-  US = "/work_beegfs/suaph296/Zymoproj/USsamples",
-  CH = "/work_beegfs/suaph296/Zymoproj/CHsamples"
+  UK = "~/Zymoproj/UKsamples",
+  US = "~/Zymoproj/USsamples",
+  CH = "~/Zymoproj/CHsamples"
 )
 
 # Define the output directory
-output_dir <- "/work_beegfs/suaph296/Zymoproj/merged"
+output_dir <- "~/Zymoproj/merged"
 
 # Define the accessory contigs
 accessory_contigs <- c("chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21")
@@ -207,7 +207,7 @@ for (region in regions) {
   }
 }
 # Script for processing diversity statistics per field and plotting for Pi and Tajimas_D at Chr level
-divstatsall <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/DivStatsAll.csv")
+divstatsall <- read.csv("~/Zymoproj/merged/DivStatsAll.csv")
 
 # Preprocess the data
 divstatscorrectedall <- divstatscorrectedall %>%
@@ -371,7 +371,7 @@ summary_table <- data.frame(
 write.table(summary_table, "permutation_test_summary.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 #load data for Pi and Tajimas_D per Effector
 # Load data
-divstatsmac1 <- read.csv("/work_beegfs/suaph296/Zymoproj/merged/divstats_all_eff_regions.csv")
+divstatsmac1 <- read.csv("~/Zymoproj/merged/divstats_all_eff_regions.csv")
 
 # Preprocess the data
 divstatsmac1 <- divstatsmac1 %>%

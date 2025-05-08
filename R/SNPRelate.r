@@ -5,8 +5,8 @@ library(ggplot2)
 # UK
 # Define the list of VCF files and corresponding output names
 vcf_files <- list(
-  relaxed = "/work_beegfs/suaph296/Zymoproj/merged/Zt_UK.relaxed.mac1.recode.vcf.gz",
-  strict = "/work_beegfs/suaph296/Zymoproj/merged/Zt_UK.max-m-80.biallelic-only.mac1.recode.vcf.gz"
+  relaxed = "~/Zymoproj/merged/Zt_UK.relaxed.mac1.recode.vcf.gz",
+  strict = "~/Zymoproj/merged/Zt_UK.max-m-80.biallelic-only.mac1.recode.vcf.gz"
 )
 
 # Loop through each VCF file
@@ -93,8 +93,8 @@ for (dataset in names(vcf_files)) {
 #CH
 # Define the list of VCF files and corresponding output names
 vcf_files <- list(
-  relaxed = "/work_beegfs/suaph296/Zymoproj/merged/Zt_CH.relaxed.mac1.recode.vcf.gz",
-  strict = "/work_beegfs/suaph296/Zymoproj/merged/Zt_CH.max-m-80.biallelic-only.mac1.recode.vcf.gz"
+  relaxed = "~/Zymoproj/merged/Zt_CH.relaxed.mac1.recode.vcf.gz",
+  strict = "~/Zymoproj/merged/Zt_CH.max-m-80.biallelic-only.mac1.recode.vcf.gz"
 )
 
 # Loop through each VCF file
@@ -166,8 +166,8 @@ for (dataset in names(vcf_files)) {
 #US
 # Define the list of VCF files and corresponding output names
 vcf_files <- list(
-  relaxed = "/work_beegfs/suaph296/Zymoproj/merged/Zt_US.relaxed.mac1.recode.vcf.gz",
-  strict = "/work_beegfs/suaph296/Zymoproj/merged/Zt_US.max-m-80.biallelic-only.mac1.recode.vcf.gz"
+  relaxed = "~/Zymoproj/merged/Zt_US.relaxed.mac1.recode.vcf.gz",
+  strict = "~/Zymoproj/merged/Zt_US.max-m-80.biallelic-only.mac1.recode.vcf.gz"
 )
 
 # Loop through each VCF file

@@ -5,7 +5,7 @@ import numpy as np
 import glob
 
 # Directory containing the sorted VCF files
-directory = '/work_beegfs/suaph296/Zymoproj/merged'
+directory = '~/Zymoproj/merged'
 
 # Initialize an empty DataFrame
 df = pd.DataFrame(columns=['file', 'chromosome', 'window_start', 'window_end', 'Pi', 'Wattersons_Theta', 'Tajimas_D', 'filter'])

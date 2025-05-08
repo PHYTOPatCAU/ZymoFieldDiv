@@ -17,7 +17,7 @@ conda activate samtools
 LOCI_FILE="effector_loci2.csv"
 
 # Set the folders containing the VCF files
-folders=("/work_beegfs/suaph296/Zymoproj/UKsamples/VCF" "/work_beegfs/suaph296/Zymoproj/USsamples/VCF" "/work_beegfs/suaph296/Zymoproj/CHsamples/VCF")
+folders=("~/Zymoproj/UKsamples/VCF" "~/Zymoproj/USsamples/VCF" "~/Zymoproj/CHsamples/VCF")
 
 # Loop through each folder
 for folder in "${folders[@]}"; do
@@ -25,7 +25,7 @@ for folder in "${folders[@]}"; do
   region=$(basename "$folder" | cut -d'/' -f3 | cut -d's' -f1)
 
   # Create the output directory
-  output_dir="/work_beegfs/suaph296/Zymoproj/merged/${region}_Effectors"
+  output_dir="~/Zymoproj/merged/${region}_Effectors"
   mkdir -p "$output_dir"
 
   # Loop through each relaxed VCF file in the folder

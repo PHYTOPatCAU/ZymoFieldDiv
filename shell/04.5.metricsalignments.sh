@@ -16,9 +16,9 @@ conda activate samtools
 
 # Define the root directories for BAM
 BAM_ROOT_DIRS=(
-    "/work_beegfs/suaph296/Zymoproj/UKsamples/BAM"
-    "/work_beegfs/suaph296/Zymoproj/CHsamples/BAM"
-    "/work_beegfs/suaph296/Zymoproj/USsamples/BAM"
+    "~/Zymoproj/UKsamples/BAM"
+    "~/Zymoproj/CHsamples/BAM"
+    "~/Zymoproj/USsamples/BAM"
 )
 
 # Iterate over each BAM root directory
