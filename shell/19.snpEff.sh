@@ -17,7 +17,7 @@ java -mx200G -jar snpEff/snpEff.jar -v Zymoseptoria_tritici Zymoproj/merged/Zt_W
 java -Xmx200G -jar snpEff/SnpSift.jar filter "(ANN[*].IMPACT = 'HIGH') | (ANN[*].IMPACT = 'MODERATE')" snpEff/SNP_eff_Zt_WW_relaxed.vcf > snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf
 
 # Extract the regions of interest from the filtered VCF
-#cat snpEff/SNP_eff_Zt_WW_strict_impact.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_strict.eff.txt
+#cat snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_relaxed.eff.txt
 # Fiter to keep only the variants with AF < 0.05 for the recovered SNPs
 #java -Xmx200G -jar snpEff/SnpSift.jar filter "AF < 0.05" snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf > snpEff/SNP_eff_Zt_WW_relaxed_rare_events.vcf
 
@@ -43,21 +43,21 @@ for variant in "${variant_types[@]}"; do
 done
 #for effectors
 # Step 3: Run the annotation 
-java -mx200G -jar snpEff/snpEff.jar -v Zymoseptoria_tritici ~/Zymoproj/merged/GOI_WW_strict/Effectors_all_merged.vcf.gz > snpEff/SNP_eff_Zt_WW_strict.vcf
+java -mx200G -jar snpEff/snpEff.jar -v Zymoseptoria_tritici ~/Zymoproj/merged/GOI_WW_relaxed/Effectors_all_merged.vcf.gz > snpEff/SNP_eff_Zt_WW_relaxed.vcf
 
 #extract the regions of interest
-#cat snpEff/SNP_eff_Zt_WW_strict.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_strict.eff.txt
+#cat snpEff/SNP_eff_Zt_WW_relaxed.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_relaxed.eff.txt
 
 # Filter the VCF to keep only SNPs with MODIFIER, HIGH, or MODERATE impact
-java -Xmx200G -jar snpEff/SnpSift.jar filter "(ANN[*].IMPACT = 'HIGH') | (ANN[*].IMPACT = 'MODERATE')" snpEff/SNP_eff_Zt_WW_strict.vcf > snpEff/SNP_eff_Zt_WW_strict_impact.vcf
+java -Xmx200G -jar snpEff/SnpSift.jar filter "(ANN[*].IMPACT = 'HIGH') | (ANN[*].IMPACT = 'MODERATE')" snpEff/SNP_eff_Zt_WW_relaxed.vcf > snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf
 
 # Extract the regions of interest from the filtered VCF
-#cat snpEff/SNP_eff_Zt_WW_strict_impact.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_strict.eff.txt
+#cat snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf | perl snpEff/scripts/vcfEffOnePerLine.pl | java -Xmx50G -jar snpEff/SnpSift.jar extractFields - CHROM POS REF ALT AF "ANN[*].ALLELE" "ANN[*].EFFECT" "ANN[*].IMPACT" "ANN[*].GENE" > snpEff/SNP_filtered_Zt_WW_relaxed.eff.txt
 # Fiter to keep only the variants with AF < 0.05 for the recovered SNPs
-java -Xmx200G -jar snpEff/SnpSift.jar filter "AF < 0.05" snpEff/SNP_eff_Zt_WW_strict_impact.vcf > snpEff/SNP_eff_Zt_WW_strict_rare_events.vcf
+java -Xmx200G -jar snpEff/SnpSift.jar filter "AF < 0.05" snpEff/SNP_eff_Zt_WW_relaxed_impact.vcf > snpEff/SNP_eff_Zt_WW_relaxed_rare_events.vcf
 
 # Define the VCF file
-vcf_file="snpEff/SNP_eff_Zt_WW_strict_rare_events.vcf"
+vcf_file="snpEff/SNP_eff_Zt_WW_relaxed_rare_events.vcf"
 
 # Define the variant types to count
 variant_types=(
