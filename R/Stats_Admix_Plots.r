@@ -369,6 +369,105 @@ summary_table <- data.frame(
   Accessory_P_Value = unlist(lapply(accessory_permutation_tests, function(x) c(x["CH", "UK"], x["CH", "US"], x["UK", "US"])))
 )
 write.table(summary_table, "permutation_test_summary.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
+# barplot for the Pi values with fill=country
+bar_plot <- ggplot(divstatscorrectedall, aes(x = chr, y = Pi, fill= country, alpha = filter)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(x = "Chromosome", y = "Pi", fill= "Field")+
+  theme(text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16)) +
+  scale_fill_brewer(palette = "Set1")
+bar_plot
+#save the corrected fig
+svg("Pi_all_corrected_mac1Biglbl.svg",  width = 16 ,  height =10)
+bar_plot
+dev.off()
+# barplot for the Tajima_D values with fill=country
+bar_plot <- ggplot(divstatscorrectedall, aes(x = chr, y = Tajima_D, fill= country. alpha = filter)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(x = "Chromosome", y = "Tajima_D", fill="Field")+
+  theme(text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16)) +
+  scale_fill_brewer(palette = "Set1")+
+  geom_hline(yintercept = -2, color = "lightblue", linetype = "dashed")  +
+  ylim(-2.5, 1)
+bar_plot
+#save the corrected fig
+svg("Tajima_D_all_corrected_mac1.svg",  width = 16 ,  height =10)
+bar_plot 
+dev.off()
+## plot SNPs per kb per chromosome
+data <- read.table("~/Zymoproj/merged/snp_counts_all_corrected_mac1.txt", header = TRUE)
+contiglength <- read.table("~/Zymoproj/contiglengthrefZt.txt", h=T)
+# Merge the data frames
+merged_data <- merge(data, contiglength, by = "chr")
+# Create the new column
+norm <- merged_data %>%
+  mutate(length = length / 1e3) %>%
+  rename(length_in_Kb = length)
+norm <- norm %>%
+  mutate(SNPs_per_Kb = snp_count / length_in_Kb)
+# Change the chromosome names
+norm$chr <- paste0("chr", norm$chr)
+
+# Convert the chromosome column to a factor and specify the levels
+norm$chr <- factor(norm$chr, levels = paste0("chr", 1:21))
+
+# Create the bar plot
+# Create a new variable for alpha levels
+norm$alpha <- ifelse(norm$filters %in% c("High-conf-GATK", "Relaxed-GATK", "Singh-et-al-2021"), norm$filters, NA)
+                            
+#keep for publishing filters
+# Subset the data
+subset_norm <- norm %>% filter(filters %in% c("High-conf-GATK", "Singh-et-al-2021"))
+
+# Create a new variable for alpha levels
+subset_norm$alpha <- ifelse(subset_norm$filters %in% c("High-conf-GATK", "Singh-et-al-2021"), subset_norm$filters, NA)
+
+# Subset the data
+subset_norm <- norm %>% filter(filters %in% c("High-conf-GATK", "Singh-et-al-2021"))
+
+# Rename the filters
+subset_norm <- subset_norm %>%
+  mutate(filters = recode(filters, 
+                          "High-conf-GATK" = "Relaxed", 
+                          "Singh-et-al-2021" = "Strict"))
+# Create a new variable for alpha levels
+subset_norm$alpha <- ifelse(subset_norm$filters %in% c("Relaxed", "Strict"), subset_norm$filters, NA)
+
+# Create the bar plot with augmented label size
+bar_plot <- ggplot() +
+  geom_bar(data = subset(subset_norm, filters == "Relaxed"), aes(x = chr, y = SNPs_per_Kb, fill = country, alpha = alpha), stat = "identity", position = "dodge") +
+  geom_bar(data = subset(subset_norm, filters == "Strict"), aes(x = chr, y = SNPs_per_Kb, fill = country, alpha = alpha), stat = "identity", position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_alpha_manual(name = "Filters", values = c("Relaxed" = 0.5, "Strict" = 1), guide = "legend") +
+  theme_minimal() +
+  labs(x = "Chromosome", y = "SNPs per Kb", fill = "Field") +
+  theme(text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        strip.text = element_text(size = 18),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+
+# Print the plot
+print(bar_plot)
+
+# Save the plot
+svg("SNPperKb_augmented_filters.svg", width = 16, height = 10)
+print(bar_plot)
+dev.off()                             
+#load data
 #load data for Pi and Tajimas_D per Effector
 # Load data
 divstatsmac1 <- read.csv("~/Zymoproj/merged/divstats_all_eff_regions.csv")
